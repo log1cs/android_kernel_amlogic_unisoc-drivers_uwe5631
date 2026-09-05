@@ -1046,7 +1046,7 @@ static int __init unisoc_wlan_init(void)
 	int ret;
 
 	ret = platform_driver_register(&sprdwl_driver);
-	if (ret) {
+	if (!ret) {
 		unisoc_pdev = platform_device_alloc("unisoc_wifi", -1);
 		if (platform_device_add(unisoc_pdev) != 0)
 			wl_err("register platform device unisoc wifi failed\n");
@@ -1058,7 +1058,10 @@ static int __init unisoc_wlan_init(void)
 static void __exit unisoc_wlan_exit(void)
 {
     platform_driver_unregister(&sprdwl_driver);
-    platform_device_del(unisoc_pdev);
+    if (unisoc_pdev) {
+        platform_device_del(unisoc_pdev);
+        unisoc_pdev = NULL;
+    }
 }
 
 module_init(unisoc_wlan_init);

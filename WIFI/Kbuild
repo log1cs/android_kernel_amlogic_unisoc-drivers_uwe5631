@@ -40,6 +40,11 @@ ifeq ($(COUSTOM_PLATFORM), asr)
 ccflags-y += -DCONFIG_THIRD_PARTY_BOARD
 ccflags-y += -DCONFIG_ASR_BOARD
 endif
+
+ifeq ($(COUSTOM_PLATFORM), aml)
+WIFI_CFLAGS += -DCONFIG_THIRD_PARTY_BOARD
+WIFI_CFLAGS += -DCONFIG_AML_BOARD
+endif
 # ------ coustom platform config end ------
 
 # ------ wcn chip id config start ------
@@ -85,7 +90,9 @@ WIFI_CFLAGS += -DDRV_RESET_SELF
 # ------ wcn wifi common macro start ------
 
 # ------ wcn common inclue files start ------
-INCLUDE_CFLAGS += -I$(src)/../unisocwcn/include/
+INCLUDE_CFLAGS += -I$(srctree)/$(src)/../BSP/include
+INCLUDE_CFLAGS += -I$(src)/../BSP/include/
+INCLUDE_CFLAGS += -I$(srctree)/common_drivers/include
 # ------ wcn common inclue files end ------
 
 # ccflags-y += -Wno-packed-bitfield-compat
@@ -96,7 +103,9 @@ $(info "wcn wifi ccflags-y: $(ccflags-y)")
 #
 # Final Objects
 #
-ifeq ($(COUSTOM_PLATFORM), unisoc)
+ifeq ($(COUSTOM_PLATFORM), aml)
+KBUILD_EXTRA_SYMBOLS = $(src)/../BSP/Module.symvers
+else ifeq ($(COUSTOM_PLATFORM), unisoc)
 KBUILD_EXTRA_SYMBOLS = $(BSP_MODULES_OUT)/wcn_bsp_ott/Module.symvers
 else
 KBUILD_EXTRA_SYMBOLS = $(BSP_MODULES_OUT)/$(UNISOC_WCN_CHIP_ID)_bsp_$(UNISOC_WCN_HW_TYPE)/Module.symvers

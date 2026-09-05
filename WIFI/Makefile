@@ -1,4 +1,4 @@
-include Kbuild
+include $(dir $(lastword $(MAKEFILE_LIST)))Kbuild
 
 ifeq ($(COUSTOM_PLATFORM), unisoc)
 KO_MODULE_NAME := sprdwl_ng_ott

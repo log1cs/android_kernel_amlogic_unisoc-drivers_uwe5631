@@ -52,6 +52,11 @@
 #include "wcn_glb_reg.h"
 #include "wcn_ca_trusty.h"
 
+#ifdef CONFIG_AML_BOARD
+extern void extern_wifi_set_enable(int is_on);
+extern void set_usb_wifi_power(int is_power);
+#endif
+
 #ifdef MODULE_PARAM_PREFIX
 #undef MODULE_PARAM_PREFIX
 #endif
@@ -70,6 +75,8 @@ static char GNSS_FIRMWARE_PATH[255];
 /* path of cp2 firmware. */
 #ifdef CONFIG_CUSTOMIZE_UNISOC_FW_PATH
 #define UNISOC_FW_PATH_DEFAULT CONFIG_CUSTOMIZE_UNISOC_FW_PATH
+#elif defined(CONFIG_AML_BOARD)
+#define UNISOC_FW_PATH_DEFAULT "/vendor/lib/firmware/"
 #else
 #define UNISOC_FW_PATH_DEFAULT "/vendor/firmware/"
 #endif
@@ -2635,6 +2642,12 @@ static int gnss_start_run(void)
 
 static int marlin_reset(int val)
 {
+#ifdef CONFIG_AML_BOARD
+	set_usb_wifi_power(0);
+	mdelay(RESET_DELAY);
+	set_usb_wifi_power(1);
+	return 0;
+#else
 	if (marlin_dev->reset <= 0)
 		return 0;
 
@@ -2645,6 +2658,7 @@ static int marlin_reset(int val)
 	}
 
 	return 0;
+#endif
 }
 
 static int chip_reset_release(int val)
@@ -2667,7 +2681,20 @@ static int chip_reset_release(int val)
 
 void marlin_chip_en(bool enable, bool reset)
 {
-
+#if defined(CONFIG_AML_BOARD) && defined(CONFIG_WCN_SDIO)
+	if (reset) {
+		set_usb_wifi_power(0);
+		msleep(100);
+		set_usb_wifi_power(1);
+		WCN_INFO("marlin chip en reset\n");
+	} else if (enable) {
+		set_usb_wifi_power(1);
+		WCN_INFO("marlin chip en enable\n");
+	} else {
+		set_usb_wifi_power(0);
+		WCN_INFO("marlin chip en disable\n");
+	}
+#else
 	if (gpio_is_valid(marlin_dev->chip_en)) {
 		if (reset) {
 			gpio_direction_output(marlin_dev->chip_en, 0);
@@ -2689,6 +2716,7 @@ void marlin_chip_en(bool enable, bool reset)
 			WCN_INFO("marlin chip en pull down\n");
 		}
 	}
+#endif
 }
 EXPORT_SYMBOL_GPL(marlin_chip_en);
 
@@ -3103,7 +3131,7 @@ static void set_wifipa_status(enum wcn_sub_sys subsys, int val)
 	chip_reset_release(1);                //chip reset enable
 	marlin_analog_power_enable(true);     //analog 1.2v power on
 	wifipa_enable(1);                     //3.3v power on
-	
+
 
 	/* do not change the follow content*/
 	if (bus_scan_card() < 0)

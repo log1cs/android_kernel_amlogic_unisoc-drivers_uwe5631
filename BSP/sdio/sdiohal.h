@@ -102,9 +102,7 @@ extern long int sdiohal_log_level;
 #define SDIO_TX_TASK_PRIO	89
 #define SDIO_RX_TASK_PRIO	90
 
-#ifdef CONFIG_THIRD_PARTY_BOARD
-
-#ifdef CONFIG_SDIO_BLKSIZE_512
+#if defined(CONFIG_SDIO_BLKSIZE_512) || defined(CONFIG_AML_BOARD)
 /* cp blk size */
 #define SDIOHAL_BLK_SIZE 512
 /* each pac data max size,cp align size */
@@ -115,12 +113,12 @@ extern long int sdiohal_log_level;
 /* each pac data max size,cp align size */
 #define MAX_PAC_SIZE ((SDIOHAL_BLK_SIZE == 512) ? \
 	(SDIOHAL_BLK_SIZE * 4) : (SDIOHAL_BLK_SIZE * 2))
-#endif
-
-#else
-
+#elif !defined(CONFIG_THIRD_PARTY_BOARD)
 #define SDIOHAL_BLK_SIZE	840
 #define MAX_PAC_SIZE		(SDIOHAL_BLK_SIZE * 2)
+#else
+#define SDIOHAL_BLK_SIZE	512
+#define MAX_PAC_SIZE		(SDIOHAL_BLK_SIZE * 4)
 #endif
 /* cp blk size */
 //#define SDIOHAL_BLK_SIZE	840
@@ -137,11 +135,7 @@ extern long int sdiohal_log_level;
 #define SDIOHAL_DTBS_BUF_SIZE	SDIOHAL_BLK_SIZE
 
 /* for rx buf */
-#ifdef CONFIG_RK_BOARD
-#define SDIOHAL_RX_NODE_NUM	(128 << 10)
-#else
 #define SDIOHAL_RX_NODE_NUM	(12 << 10)
-#endif	/*CONFIG_RK_BOARD*/
 
 /* for 64 bit sys */
 #define SDIOHAL_RX_RECVBUF_LEN	(MAX_CHAIN_NODE_NUM * MAX_MBUF_SIZE)
@@ -199,20 +193,17 @@ extern long int sdiohal_log_level;
 
 #define SDIOHAL_ALIGN_4BYTE(a)	(((a)+3)&(~3))
 
-#ifdef CONFIG_THIRD_PARTY_BOARD
-#ifdef CONFIG_SDIO_BLKSIZE_512
+#if defined(CONFIG_SDIO_BLKSIZE_512) || defined(CONFIG_AML_BOARD)
 #define SDIOHAL_ALIGN_BLK(a)  (((a)+511)&(~511))
 #elif defined(CONFIG_WCN_PARSE_DTS)
 #define SDIOHAL_ALIGN_BLK(a) ((SDIOHAL_BLK_SIZE == 512) ? \
 		(((a)+511)&(~511)) : (((a)%SDIOHAL_BLK_SIZE) ? \
 		(((a)/SDIOHAL_BLK_SIZE + 1)*SDIOHAL_BLK_SIZE) : (a)))
-#else
+#elif !defined(CONFIG_THIRD_PARTY_BOARD)
 #define SDIOHAL_ALIGN_BLK(a) (((a)%SDIOHAL_BLK_SIZE) ? \
 		(((a)/SDIOHAL_BLK_SIZE + 1)*SDIOHAL_BLK_SIZE) : (a))
-#endif
 #else
-#define SDIOHAL_ALIGN_BLK(a) (((a)%SDIOHAL_BLK_SIZE) ? \
-		(((a)/SDIOHAL_BLK_SIZE + 1)*SDIOHAL_BLK_SIZE) : (a))
+#define SDIOHAL_ALIGN_BLK(a)  (((a)+511)&(~511))
 #endif
 
 

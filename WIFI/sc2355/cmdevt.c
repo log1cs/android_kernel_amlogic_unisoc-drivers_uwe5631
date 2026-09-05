@@ -3486,7 +3486,9 @@ void sprdwl_event_chan_changed(struct sprdwl_vif *vif, u8 *data, u16 len)
 			/* we will be active on the channel */
 			cfg80211_chandef_create(&chandef, ch,
 						NL80211_CHAN_HT20);
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 0, 0) || defined(CONFIG_NXP_BOARD)
+#if defined(CONFIG_AML_BOARD)
+			cfg80211_ch_switch_notify(vif->ndev, &chandef, 0, 0);
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(6, 0, 0) || defined(CONFIG_NXP_BOARD)
 			cfg80211_ch_switch_notify(vif->ndev, &chandef, 0);
 #else
 			cfg80211_ch_switch_notify(vif->ndev, &chandef);

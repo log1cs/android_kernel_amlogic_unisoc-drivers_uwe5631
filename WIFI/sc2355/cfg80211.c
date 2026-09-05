@@ -47,12 +47,7 @@
 #include "qos.h"
 #endif
 
-#ifdef CONFIG_RK_BOARD
-#define CUSTOM_REGDOMAIN
-#endif
-#if defined(CUSTOM_REGDOMAIN)
 #include "reg_domain.h"
-#endif
 
 #define RATETAB_ENT(_rate, _rateid, _flags)				\
 {									\
@@ -816,7 +811,7 @@ static int sprdwl_add_cipher_key(struct sprdwl_vif *vif, bool pairwise,
 	return ret;
 }
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 1, 0) || defined(CONFIG_NXP_BOARD)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 1, 0) || defined(CONFIG_NXP_BOARD) || defined(CONFIG_AML_BOARD)
 static int sprdwl_cfg80211_add_key(struct wiphy *wiphy, struct net_device *ndev,
 				   int link_id, u8 key_index, bool pairwise,
 				   const u8 *mac_addr,
@@ -854,7 +849,7 @@ static int sprdwl_cfg80211_add_key(struct wiphy *wiphy, struct net_device *ndev,
 					     mac_addr);
 }
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 1, 0) || defined(CONFIG_NXP_BOARD)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 1, 0) || defined(CONFIG_NXP_BOARD) || defined(CONFIG_AML_BOARD)
 static int sprdwl_cfg80211_del_key(struct wiphy *wiphy, struct net_device *ndev,
 				   int link_id, u8 key_index, bool pairwise,
 				   const u8 *mac_addr)
@@ -889,7 +884,7 @@ static int sprdwl_cfg80211_del_key(struct wiphy *wiphy, struct net_device *ndev,
 			      pairwise, mac_addr);
 }
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 1, 0) || defined(CONFIG_NXP_BOARD)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 1, 0) || defined(CONFIG_NXP_BOARD) || defined(CONFIG_AML_BOARD)
 static int sprdwl_cfg80211_set_default_key(struct wiphy *wiphy,
 					   struct net_device *ndev, int link_id,
 					   u8 key_index, bool unicast,
@@ -1089,7 +1084,9 @@ static int sprdwl_cfg80211_start_ap(struct wiphy *wiphy,
 		if (ch) {
 			type = cfg80211_get_chandef_type(&chandef);
 			cfg80211_chandef_create(&chandef, ch, type);
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 0, 0) || defined(CONFIG_NXP_BOARD)
+#if defined(CONFIG_AML_BOARD)
+			cfg80211_ch_switch_notify(vif->ndev, &chandef, 0, 0);
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(6, 0, 0) || defined(CONFIG_NXP_BOARD)
 			cfg80211_ch_switch_notify(vif->ndev, &chandef, 0);
 #else
 			cfg80211_ch_switch_notify(vif->ndev, &chandef);
@@ -1126,7 +1123,7 @@ static int sprdwl_cfg80211_change_beacon(struct wiphy *wiphy,
 }
 
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 1, 0) || defined(CONFIG_NXP_BOARD)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 1, 0) || defined(CONFIG_NXP_BOARD) || defined(CONFIG_AML_BOARD)
 static int sprdwl_cfg80211_stop_ap(struct wiphy *wiphy, struct net_device *ndev,
 						unsigned int link_id)
 #else
@@ -2663,7 +2660,7 @@ REPORT_CONNCT_RESULT:
 		 conn_info->status == SPRDWL_ROAM_SUCCESS){
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 14, 0)
 		struct cfg80211_roam_info roam_info = {
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 0, 0) || defined(CONFIG_NXP_BOARD)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 0, 0) || defined(CONFIG_NXP_BOARD) || defined(CONFIG_AML_BOARD)
 			.links[0].bss = bss,
 #else
 			.bss = bss,
@@ -3526,7 +3523,7 @@ int sprdwl_cfg80211_set_power_mgmt(struct wiphy *wiphy, struct net_device *ndev,
 				 SPRDWL_SET_PS_STATE, enabled);
 }
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 1, 0) || defined(CONFIG_NXP_BOARD)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 1, 0) || defined(CONFIG_NXP_BOARD) || defined(CONFIG_AML_BOARD)
 static int sprdwl_cfg80211_set_default_mgmt_key(struct wiphy *wiphy,
 						struct net_device *netdev, int link_id,
 						u8 key_index)

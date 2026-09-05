@@ -45,6 +45,12 @@ ifeq ($(COUSTOM_PLATFORM), asr)
 MARLIN_CFLAGS += -DCONFIG_THIRD_PARTY_BOARD
 MARLIN_CFLAGS += -DCONFIG_ASR_BOARD
 endif
+
+ifeq ($(COUSTOM_PLATFORM), aml)
+MARLIN_CFLAGS += -DCONFIG_THIRD_PARTY_BOARD
+MARLIN_CFLAGS += -DCONFIG_AML_BOARD
+MARLIN_CFLAGS += -DCONFIG_SDIO_BLKSIZE_512
+endif
 # ------ coustom platform config end ------
 
 # ------ wcn chip id config start ------
@@ -127,7 +133,9 @@ CONFIG_WCN_BOOT = y
 MARLIN_CFLAGS += -DCONFIG_WCN_USER
 # endif
 # MARLIN_CFLAGS += -DCONFIG_WCN_RDCDBG
+ifneq ($(COUSTOM_PLATFORM), aml)
 MARLIN_CFLAGS += -DCONFIG_WCN_PARSE_DTS
+endif
 # ------ wcn common macro end ------
 
 # ------ wcn common inclue files start ------
@@ -135,12 +143,16 @@ ifeq ($(COUSTOM_PLATFORM), nxp)
 INCLUDE_CFLAGS += -I$(srctree)/$(src)/include
 INCLUDE_CFLAGS += -I$(srctree)/$(src)/platform
 else
+INCLUDE_CFLAGS += -I$(srctree)/$(src)/include
 INCLUDE_CFLAGS += -I$(src)/include/
+INCLUDE_CFLAGS += -I$(srctree)/$(src)/platform
 INCLUDE_CFLAGS += -I$(src)/platform/
+INCLUDE_CFLAGS += -I$(srctree)/common_drivers/include
 endif
 # ------ wcn common inclue files end ------
 
 ccflags-y += -Wno-date-time
+ccflags-y += -DCONFIG_WCN_GKI
 
 ccflags-y += $(MARLIN_CFLAGS)
 ccflags-y += $(INCLUDE_CFLAGS)

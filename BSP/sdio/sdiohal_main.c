@@ -22,11 +22,11 @@
 #ifdef CONFIG_UMW2653
 #include "umw2653_glb.h"
 #endif
-#ifdef CONFIG_RK_BOARD
-#include <linux/rfkill-wlan.h>
-#include <dt-bindings/gpio/gpio.h>
-//static enum of_gpio_flags rk_irq_flag;
-extern int rockchip_wifi_set_carddetect(int val);
+#ifdef CONFIG_AML_BOARD
+extern int wifi_irq_num(void);
+extern int wifi_irq_trigger_level(void);
+extern void sdio_reinit(void);
+extern void sdio_set_max_regs(unsigned int size);
 #endif
 
 #if defined(CONFIG_UNISOC_BOARD) || defined(CONFIG_NXP_BOARD)
@@ -1036,6 +1036,10 @@ static int sdiohal_enable_slave_irq(void)
 static int sdiohal_host_irq_init(unsigned int irq_gpio_num)
 {
 	struct sdiohal_data_t *p_data = sdiohal_get_data();
+#ifdef CONFIG_AML_BOARD
+	p_data->irq_num = wifi_irq_num();
+	return 0;
+#else
 	int ret;
 
 	ret = gpio_request(irq_gpio_num, "sdiohal_gpio");
@@ -1053,6 +1057,7 @@ static int sdiohal_host_irq_init(unsigned int irq_gpio_num)
 	p_data->irq_num = gpio_to_irq(irq_gpio_num);
 
 	return 0;
+#endif
 }
 
 static int sdiohal_get_dev_func(struct sdio_func *func)
@@ -1107,6 +1112,11 @@ static struct mmc_host *sdiohal_dev_get_host(struct device_node *np_node)
 static int sdiohal_parse_dt(void)
 {
 	struct sdiohal_data_t *p_data = sdiohal_get_data();
+#ifdef CONFIG_AML_BOARD
+	p_data->blk_size = true;
+	p_data->irq_type = SDIOHAL_RX_EXTERNAL_IRQ;
+	return 0;
+#else
 	struct device_node *np;
 	struct device_node *sdio_node;
 	char *sdio_irq_type;
@@ -1188,6 +1198,7 @@ static int sdiohal_parse_dt(void)
 #endif
 
 	return 0;
+#endif
 }
 
 static int sdiohal_suspend(struct device *dev)
@@ -1486,7 +1497,9 @@ static int sdiohal_probe(struct sdio_func *func,
 		}
 
 		ret = request_irq(p_data->irq_num, sdiohal_irq_handler,
-#ifdef CONFIG_ASR_BOARD
+#ifdef CONFIG_AML_BOARD
+			  (wifi_irq_trigger_level() ? wifi_irq_trigger_level() : IRQF_TRIGGER_HIGH) | IRQF_NO_SUSPEND,
+#elif defined(CONFIG_ASR_BOARD)
 			  IRQF_TRIGGER_RISING | IRQF_NO_SUSPEND,
 #else
 			  IRQF_TRIGGER_HIGH | IRQF_NO_SUSPEND,
@@ -1508,14 +1521,8 @@ static int sdiohal_probe(struct sdio_func *func,
 
 	/* the card is nonremovable */
 	p_data->sdio_dev_host->caps |= MMC_CAP_NONREMOVABLE;
-#ifdef CONFIG_RK_BOARD
-#define MMC_CAP2_SDIO_IRQ_NOTHREAD (1 << 17)
-	/* Some RK platform, if config caps with MMC_CAP_SDIO_IRQ, will set
-	 * caps2 with MMC_CAP2_SDIO_IRQ_NOTHREAD at the same time.
-	 * This is unexpected. So clear this status.
-	 */
-	if(p_data->irq_type == SDIOHAL_RX_INBAND_IRQ)
-		p_data->sdio_dev_host->caps2 &= ~MMC_CAP2_SDIO_IRQ_NOTHREAD;
+#ifdef CONFIG_AML_BOARD
+	sdio_set_max_regs(0x80000);
 #endif
 
 	/* calling rescan callback to inform download */
@@ -1720,12 +1727,8 @@ int sdiohal_scan_card(void *wcn_dev)
 		msleep(100);
 	}
 
-#ifdef CONFIG_RK_BOARD
-	rockchip_wifi_set_carddetect(1);
-#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 10, 0)
-	primary_sdio_host->caps |= MMC_CAP_NONREMOVABLE;
-	primary_sdio_host->rescan_entered = 0;
-#endif
+#ifdef CONFIG_AML_BOARD
+	sdio_reinit();
 #endif
 
 #ifdef CONFIG_QCOM_BOARD
@@ -1785,6 +1788,9 @@ int sdiohal_init(void)
 
 	sdiohal_launch_thread();
 	
+#ifdef CONFIG_AML_BOARD
+	sdiohal_host_irq_init(0);
+#else
 	if(p_data->irq_type != SDIOHAL_RX_INBAND_IRQ)
 	{
 		if (gpio_is_valid(p_data->gpio_num)) 
@@ -1792,6 +1798,7 @@ int sdiohal_init(void)
 			sdiohal_host_irq_init(p_data->gpio_num);
 		}
 	}
+#endif
 	
 	p_data->flag_init = true;
 	/* card not ready */
